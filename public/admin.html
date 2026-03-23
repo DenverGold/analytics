@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Mining Forum Analytics</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .admin-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Login form */
+    .login-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      text-align: center;
+      max-width: 400px;
+      margin: 60px auto;
+    }
+    .login-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--header-mid);
+      margin-bottom: 8px;
+    }
+    .login-card p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 2px solid #E0E0E0;
+      border-radius: 8px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-card input[type="password"]:focus {
+      border-color: var(--color-gold);
+    }
+    .login-card .btn {
+      margin-top: 16px;
+      width: 100%;
+    }
+    .login-error {
+      color: #E74C3C;
+      font-size: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-gold {
+      background: var(--color-gold);
+      color: #fff;
+    }
+    .btn-gold:hover { background: #B8860B; }
+    .btn-gold:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-danger {
+      background: #E74C3C;
+      color: #fff;
+    }
+    .btn-danger:hover { background: #C0392B; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #E0E0E0;
+      color: var(--text-primary);
+    }
+    .btn-outline:hover { border-color: var(--color-gold); }
+
+    /* Dashboard */
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .admin-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--header-mid);
+    }
+
+    .upload-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .upload-section h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--header-mid);
+      margin-bottom: 4px;
+    }
+    .upload-section .desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .file-input-wrap {
+      flex: 1;
+      min-width: 200px;
+    }
+    .file-input-wrap input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 2px dashed #D0D4DE;
+      border-radius: 8px;
+      background: #FAFBFC;
+      cursor: pointer;
+    }
+    .file-input-wrap input[type="file"]:hover {
+      border-color: var(--color-gold);
+    }
+
+    /* Progress */
+    .upload-progress {
+      margin-top: 16px;
+      display: none;
+    }
+    .progress-bar {
+      height: 6px;
+      background: #E8EAF0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-gold);
+      border-radius: 3px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+
+    /* Results */
+    .upload-result {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+    }
+    .upload-result.success {
+      background: #EAFAF1;
+      color: #1E8449;
+      border: 1px solid #A9DFBF;
+    }
+    .upload-result.error {
+      background: #FDEDEC;
+      color: #C0392B;
+      border: 1px solid #F5B7B1;
+    }
+
+    /* Current data stats */
+    .data-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .stat-card .stat-num {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .stat-card .stat-lbl {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="page-header dgg-theme">
+    <img class="logo" src="/logos/dgg-logo.png" alt="Denver Gold Group">
+    <div class="header-text">
+      <h1><a href="/">Mining Forum Event Analytics</a></h1>
+      <div class="subtitle">Admin Dashboard</div>
+    </div>
+  </div>
+
+  <!-- Login Screen -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h2>Admin Login</h2>
+      <p>Enter the admin password to manage data uploads.</p>
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+      <button class="btn btn-gold" onclick="doLogin()">Sign In</button>
+      <div class="login-error" id="login-error">Invalid password. Please try again.</div>
+    </div>
+  </div>
+
+  <!-- Dashboard (hidden until logged in) -->
+  <div id="dashboard" style="display:none">
+    <div class="admin-wrap">
+
+      <div class="admin-header">
+        <h2>Data Management</h2>
+        <div>
+          <a href="/" class="btn btn-outline" style="margin-right:8px">View Site</a>
+          <button class="btn btn-outline" onclick="doLogout()">Log Out</button>
+        </div>
+      </div>
+
+      <!-- Current data stats -->
+      <div class="data-stats" id="data-stats">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-companies" style="color:#8B6914">—</div>
+          <div class="stat-lbl">DGG Companies</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-mfe" style="color:#1B5E20">—</div>
+          <div class="stat-lbl">MFE26 Participants</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-mfa" style="color:#1A237E">—</div>
+          <div class="stat-lbl">MFA26 Participants</div>
+        </div>
+      </div>
+
+      <!-- Upload: Companies CSV -->
+      <div class="upload-section">
+        <h3>Upload Companies CSV</h3>
+        <div class="desc">Sync the <strong>companies</strong> table with the CSV (file of record). New companies are added, existing companies are updated, and companies not in the CSV are removed.</div>
+        <div class="upload-row">
+          <div class="file-input-wrap">
+            <input type="file" id="companies-file" accept=".csv">
+          </div>
+          <button class="btn btn-gold" id="companies-upload-btn" onclick="uploadCSV('companies')" disabled>Upload Companies</button>
+        </div>
+        <div class="upload-progress" id="companies-progress">
+          <div class="progress-bar"><div class="progress-fill" id="companies-progress-fill"></div></div>
+          <div class="progress-text" id="companies-progress-text">Uploading...</div>
+        </div>
+        <div class="upload-result" id="companies-result"></div>
+      </div>
+
+      <!-- Upload: MFE26 Event CSV -->
+      <div class="upload-section">
+        <h3>Upload MFE26 Event Participations CSV</h3>
+        <div class="desc">Sync <strong>Mining Forum Europe 2026</strong> participations with the CSV (file of record). New companies are added, existing companies are updated, and companies no longer in any event are removed.</div>
+        <div class="upload-row">
+          <div class="file-input-wrap">
+            <input type="file" id="mfe26-file" accept=".csv">
+          </div>
+          <button class="btn btn-gold" id="mfe26-upload-btn" onclick="uploadCSV('mfe26')" disabled>Upload MFE26</button>
+        </div>
+        <div class="upload-progress" id="mfe26-progress">
+          <div class="progress-bar"><div class="progress-fill" id="mfe26-progress-fill"></div></div>
+          <div class="progress-text" id="mfe26-progress-text">Uploading...</div>
+        </div>
+        <div class="upload-result" id="mfe26-result"></div>
+      </div>
+
+      <!-- Upload: MFA26 Event CSV -->
+      <div class="upload-section">
+        <h3>Upload MFA26 Event Participations CSV</h3>
+        <div class="desc">Sync <strong>Mining Forum Americas 2026</strong> participations with the CSV (file of record). New companies are added, existing companies are updated, and companies no longer in any event are removed.</div>
+        <div class="upload-row">
+          <div class="file-input-wrap">
+            <input type="file" id="mfa26-file" accept=".csv">
+          </div>
+          <button class="btn btn-gold" id="mfa26-upload-btn" onclick="uploadCSV('mfa26')" disabled>Upload MFA26</button>
+        </div>
+        <div class="upload-progress" id="mfa26-progress">
+          <div class="progress-bar"><div class="progress-fill" id="mfa26-progress-fill"></div></div>
+          <div class="progress-text" id="mfa26-progress-text">Uploading...</div>
+        </div>
+        <div class="upload-result" id="mfa26-result"></div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="upload-section" style="border:2px solid #FADBD8">
+        <h3 style="color:#E74C3C">Danger Zone</h3>
+        <div class="desc">These actions are irreversible.</div>
+        <button class="btn btn-danger" onclick="purgeTable('companies')">Purge All Companies</button>
+        <button class="btn btn-danger" onclick="purgeTable('mfe26')" style="margin-left:8px">Purge MFE26</button>
+        <button class="btn btn-danger" onclick="purgeTable('mfa26')" style="margin-left:8px">Purge MFA26</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page-footer">
+    &copy; 2026 Denver Gold Group. Admin Dashboard.
+  </div>
+
+  <script>
+    var adminToken = sessionStorage.getItem('admin_token') || '';
+
+    // Auto-login if token exists
+    if (adminToken) showDashboard();
+
+    // Enable upload buttons when file selected
+    ['companies', 'mfe26', 'mfa26'].forEach(function(t) {
+      document.getElementById(t + '-file').addEventListener('change', function() {
+        document.getElementById(t + '-upload-btn').disabled = !this.files.length;
+      });
+    });
+
+    // Enter key on password
+    document.getElementById('password-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    async function doLogin() {
+      var pw = document.getElementById('password-input').value;
+      var errEl = document.getElementById('login-error');
+      errEl.style.display = 'none';
+
+      try {
+        var res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          adminToken = data.token;
+          sessionStorage.setItem('admin_token', adminToken);
+          showDashboard();
+        } else {
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Connection error: ' + err.message;
+        errEl.style.display = 'block';
+      }
+    }
+
+    function doLogout() {
+      adminToken = '';
+      sessionStorage.removeItem('admin_token');
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'block';
+      document.getElementById('password-input').value = '';
+    }
+
+    function showDashboard() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadStats();
+    }
+
+    async function loadStats() {
+      try {
+        var res = await fetch('/api/upload?action=stats', {
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        });
+        var data = await res.json();
+        if (data.ok) {
+          document.getElementById('stat-companies').textContent = data.companies || 0;
+          document.getElementById('stat-mfe').textContent = data.mfe26 || 0;
+          document.getElementById('stat-mfa').textContent = data.mfa26 || 0;
+        }
+      } catch (err) {
+        console.error('Stats error:', err);
+      }
+    }
+
+    async function uploadCSV(target) {
+      var fileInput = document.getElementById(target + '-file');
+      var progressEl = document.getElementById(target + '-progress');
+      var fillEl = document.getElementById(target + '-progress-fill');
+      var textEl = document.getElementById(target + '-progress-text');
+      var resultEl = document.getElementById(target + '-result');
+      var btn = document.getElementById(target + '-upload-btn');
+
+      if (!fileInput.files.length) return;
+
+      var file = fileInput.files[0];
+      btn.disabled = true;
+      progressEl.style.display = 'block';
+      resultEl.style.display = 'none';
+      fillEl.style.width = '20%';
+      textEl.textContent = 'Reading file...';
+
+      try {
+        var text = await file.text();
+        fillEl.style.width = '40%';
+        textEl.textContent = 'Uploading to server...';
+
+        var res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + adminToken
+          },
+          body: JSON.stringify({ target: target, csv: text })
+        });
+
+        fillEl.style.width = '80%';
+        textEl.textContent = 'Processing...';
+
+        var data = await res.json();
+
+        fillEl.style.width = '100%';
+
+        if (data.ok) {
+          resultEl.className = 'upload-result success';
+          resultEl.textContent = data.message;
+          textEl.textContent = 'Done!';
+          loadStats();
+        } else {
+          resultEl.className = 'upload-result error';
+          resultEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+          textEl.textContent = 'Failed';
+        }
+        resultEl.style.display = 'block';
+      } catch (err) {
+        resultEl.className = 'upload-result error';
+        resultEl.textContent = 'Upload failed: ' + err.message;
+        resultEl.style.display = 'block';
+        textEl.textContent = 'Failed';
+      }
+
+      btn.disabled = false;
+    }
+
+    async function purgeTable(target) {
+      if (!confirm('Are you sure you want to delete ALL records for ' + target + '? This cannot be undone.')) return;
+
+      try {
+        var res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + adminToken
+          },
+          body: JSON.stringify({ target: target, action: 'purge' })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          alert(data.message);
+          loadStats();
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+  </script>
+
+</body>
+</html>

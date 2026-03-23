@@ -1,0 +1,13 @@
+{
+  "name": "mining-forum-analytics",
+  "version": "1.0.0",
+  "description": "Mining Forum Event Analytics - Denver Gold Group",
+  "private": true,
+  "scripts": {
+    "start": "npx serve public",
+    "build": "echo 'Static site - no build needed'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0"
+  }
+}

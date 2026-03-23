@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mining Forum Event Analytics</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Page Header -->
+  <div class="page-header" id="page-header">
+    <img class="logo" id="header-logo" src="/logos/dgg-logo.png" alt="Denver Gold Group">
+    <div class="header-text">
+      <h1><a href="#" id="header-title">Mining Forum Event Analytics</a></h1>
+      <div class="subtitle" id="header-subtitle">Comparative analysis of Denver Gold Group membership and forum participation</div>
+      <div class="tagline">Presented by Denver Gold Group</div>
+    </div>
+  </div>
+
+  <!-- Section Tabs -->
+  <div class="section-tabs" id="section-tabs">
+    <a href="#dgg" class="active-dgg" data-section="dgg" id="tab-dgg">DGG Membership</a>
+    <a href="#mfe" data-section="mfe" id="tab-mfe">Mining Forum Europe 2026</a>
+    <a href="#mfa" data-section="mfa" id="tab-mfa">Mining Forum Americas 2026</a>
+  </div>
+
+  <!-- Sub-Navigation -->
+  <div class="nav-bar" id="nav-bar">
+    <a href="#" class="active" data-view="overview">Overview</a>
+    <a href="#" data-view="all-companies">All Companies</a>
+    <a href="#" data-view="solitaire-mineral">By Mineral</a>
+    <a href="#" data-view="solitaire-status">By Status</a>
+    <a href="#" data-view="solitaire-country">By Country</a>
+    <a href="#" data-view="flat-rank">Flat Rank</a>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content" id="content">
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+      Loading data from Supabase&hellip;
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    Mining Forum Event Analytics &middot; Data as of March 2026 &middot; Market caps in USD &middot; &copy; 2026 Denver Gold Group
+  </div>
+
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/overview.js"></script>
+  <script src="/js/solitaire.js"></script>
+  <script src="/js/production-reserves.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
