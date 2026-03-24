@@ -314,7 +314,7 @@ function initOverviewCharts(companies, cfg) {
         scales: {
           x: {
             ticks: {
-              callback: function(v) { return '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'B' : Math.round(v) + 'M'); },
+              callback: function(v) { return '$' + (v >= 1e6 ? (v/1e6).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'T' : v >= 1000 ? (v/1000).toFixed(1) + 'B' : Math.round(v) + 'M'); },
               font: { size: 10, family: 'Inter' }
             },
             grid: { color: '#F0F2F5' }

@@ -148,6 +148,7 @@ function formatSpotPrice(price, metal) {
 // Format market cap for display
 function formatMcap(mcapUsd) {
   if (!mcapUsd || mcapUsd === 0) return '—';
+  if (mcapUsd >= 1e12) return '$' + (mcapUsd / 1e12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'T';
   if (mcapUsd >= 1e9) return '$' + (mcapUsd / 1e9).toFixed(2) + 'B';
   if (mcapUsd >= 1e6) return '$' + (mcapUsd / 1e6).toFixed(1) + 'M';
   return '$' + Math.round(mcapUsd).toLocaleString();
