@@ -293,11 +293,9 @@ module.exports = async function handler(req, res) {
             row.id = existingId;
             toUpdate.push(row);
           } else {
-            // Assign a new id if not provided
-            if (!row.id) {
-              maxId++;
-              row.id = maxId;
-            }
+            // Always assign a fresh id for new companies to avoid PK collisions
+            maxId++;
+            row.id = maxId;
             toInsert.push(row);
           }
         });
@@ -313,7 +311,7 @@ module.exports = async function handler(req, res) {
           updated++;
         }
 
-        // Insert new companies in batches
+        // Upsert new companies in batches (handles id conflicts from CSV)
         for (let i = 0; i < toInsert.length; i += 50) {
           const batch = toInsert.slice(i, i + 50);
           const { error: insErr } = await sb.from('companies').insert(batch);
