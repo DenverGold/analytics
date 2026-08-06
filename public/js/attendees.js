@@ -6,6 +6,25 @@ var CHART_COLORS = [
   '#16A085', '#C0392B', '#2C3E50', '#7F8C8D', '#2ECC71'
 ];
 
+// Standing projection rule — reflects expected accretion/attrition by the event start date:
+// Buy-Side and Sell-Side inflated +3.5%; Member Delegates suppressed -2%; all other classes unchanged.
+var ATT_PROJ_BUYSELL = 1.035;
+var ATT_PROJ_DELEGATE = 0.98;
+var ATT_PROJ_OTHER = 1.0;
+
+function attProjFactor(a) {
+  if (a.type === 'Delegate') return ATT_PROJ_DELEGATE;
+  if (a.category === 'Buy-Side' || a.category === 'Sell-Side') return ATT_PROJ_BUYSELL;
+  return ATT_PROJ_OTHER;
+}
+
+// Projected headcount for a set of attendees, summing each attendee's class factor.
+function attProjectedCount(list) {
+  var s = 0;
+  for (var i = 0; i < list.length; i++) { s += attProjFactor(list[i]); }
+  return Math.round(s);
+}
+
 function renderAttendees(attendees, cfg) {
   if (!attendees || attendees.length === 0) {
     return '<div style="padding:60px;text-align:center;color:#7F8C8D"><h3>No attendee data available</h3></div>';
@@ -18,16 +37,14 @@ function renderAttendees(attendees, cfg) {
   var speakers = all.filter(function(a) { return a.type === 'Speaker'; });
   var buyside = participants.filter(function(a) { return a.category === 'Buy-Side'; });
 
-  var MULT = 1.045;
-
   var html = '';
 
-  // Summary stats (inflated by 1.11x)
+  // Summary stats — projected to event start date (Buy/Sell-Side +3.5%, Delegates -2%)
   html += '<div class="summary-grid">';
-  html += summaryBox('Total Attendees', Math.round(all.length * MULT), cfg.keyColor);
-  html += summaryBox('Delegates', Math.round(delegates.length * MULT), '#27AE60');
-  html += summaryBox('Participants', Math.round(participants.length * MULT), '#2980B9');
-  html += summaryBox('Buy-Side', Math.round(buyside.length * MULT), '#9B59B6');
+  html += summaryBox('Total Attendees', attProjectedCount(all), cfg.keyColor);
+  html += summaryBox('Delegates', attProjectedCount(delegates), '#27AE60');
+  html += summaryBox('Participants', attProjectedCount(participants), '#2980B9');
+  html += summaryBox('Buy-Side', attProjectedCount(buyside), '#9B59B6');
   html += summaryBox('Countries', new Set(all.map(function(a) { return a.country; }).filter(Boolean)).size, '#E67E22');
   var presentationCompanies = new Set(delegates.map(function(a) { return (a.company || '').toLowerCase().trim(); }).filter(Boolean));
   html += summaryBox('Presentations', presentationCompanies.size, '#7F8C8D');
@@ -46,7 +63,7 @@ function renderAttendees(attendees, cfg) {
 
   // Country bar
   var byCountry = {};
-  all.forEach(function(a) { if (a.country) byCountry[a.country] = (byCountry[a.country] || 0) + 1; });
+  all.forEach(function(a) { if (a.country) byCountry[a.country] = (byCountry[a.country] || 0) + attProjFactor(a); });
   var countrySorted = Object.entries(byCountry).sort(function(a, b) { return b[1] - a[1]; });
   var countryBarH = countrySorted.length * 28 + 40;
   html += '<div class="chart-card" style="margin-bottom:20px;padding-bottom:8px"><h3>Attendees by Country</h3>';
@@ -56,7 +73,7 @@ function renderAttendees(attendees, cfg) {
   var byRegion = {};
   all.forEach(function(a) {
     var r = getAttendeeRegion(a.country);
-    byRegion[r] = (byRegion[r] || 0) + 1;
+    byRegion[r] = (byRegion[r] || 0) + attProjFactor(a);
   });
   var regionSorted = Object.entries(byRegion).sort(function(a, b) { return b[1] - a[1]; });
   var regionBarH = regionSorted.length * 40 + 40;
@@ -67,7 +84,7 @@ function renderAttendees(attendees, cfg) {
   // Store data for chart init
   window._attChartData = {
     all: all, delegates: delegates, participants: participants,
-    buyside: buyside, countrySorted: countrySorted, regionSorted: regionSorted, MULT: MULT
+    buyside: buyside, countrySorted: countrySorted, regionSorted: regionSorted
   };
 
   return html;
@@ -185,15 +202,14 @@ function initAttendeesCharts(cfg) {
     }
   });
 
-  // ---- Bar: Country ----
-  var MULT = d.MULT;
+  // ---- Bar: Country ---- (values already projected via attProjFactor)
   _createChart('att-chart-country', {
     type: 'bar',
     data: {
       labels: d.countrySorted.map(function(e) { return e[0]; }),
       datasets: [{
         label: 'Attendees',
-        data: d.countrySorted.map(function(e) { return Math.round(e[1] * MULT); }),
+        data: d.countrySorted.map(function(e) { return Math.round(e[1]); }),
         backgroundColor: keyColor,
         borderWidth: 0,
         borderRadius: 3
@@ -221,7 +237,7 @@ function initAttendeesCharts(cfg) {
       labels: d.regionSorted.map(function(e) { return e[0]; }),
       datasets: [{
         label: 'Attendees',
-        data: d.regionSorted.map(function(e) { return Math.round(e[1] * MULT); }),
+        data: d.regionSorted.map(function(e) { return Math.round(e[1]); }),
         backgroundColor: CHART_COLORS.slice(0, d.regionSorted.length),
         borderWidth: 0,
         borderRadius: 3
