@@ -6,22 +6,35 @@ var CHART_COLORS = [
   '#16A085', '#C0392B', '#2C3E50', '#7F8C8D', '#2ECC71'
 ];
 
-// Standing projection rule — reflects expected accretion/attrition by the event start date:
-// Buy-Side and Sell-Side inflated +3.5%; Member Delegates suppressed -2%; all other classes unchanged.
-var ATT_PROJ_BUYSELL = 1.035;
+// Standing projection rule — reflects expected accretion/attrition by the event start date.
+// Buy-Side & Sell-Side inflation is time-phased: 1.11 (+11%) until the Friday before the
+// event start, then 1.035 (+3.5%) from that Friday onward. Member Delegates suppressed -2%;
+// all other classes unchanged.
+var ATT_PROJ_BUYSELL_EARLY = 1.11;  // until the Friday before the event
+var ATT_PROJ_BUYSELL_LATE = 1.035;  // that Friday onward
 var ATT_PROJ_DELEGATE = 0.98;
 var ATT_PROJ_OTHER = 1.0;
 
-function attProjFactor(a) {
+// The Buy/Sell-Side multiplier in effect today, given the event start date (YYYY-MM-DD).
+function attBuySellMult(cfg) {
+  if (!cfg || !cfg.eventStartDate) return ATT_PROJ_BUYSELL_LATE;
+  var friday = new Date(cfg.eventStartDate + 'T00:00:00');
+  do { friday.setDate(friday.getDate() - 1); } while (friday.getDay() !== 5); // walk back to the prior Friday
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today < friday ? ATT_PROJ_BUYSELL_EARLY : ATT_PROJ_BUYSELL_LATE;
+}
+
+function attProjFactor(a, buySellMult) {
   if (a.type === 'Delegate') return ATT_PROJ_DELEGATE;
-  if (a.category === 'Buy-Side' || a.category === 'Sell-Side') return ATT_PROJ_BUYSELL;
+  if (a.category === 'Buy-Side' || a.category === 'Sell-Side') return buySellMult;
   return ATT_PROJ_OTHER;
 }
 
 // Projected headcount for a set of attendees, summing each attendee's class factor.
-function attProjectedCount(list) {
+function attProjectedCount(list, buySellMult) {
   var s = 0;
-  for (var i = 0; i < list.length; i++) { s += attProjFactor(list[i]); }
+  for (var i = 0; i < list.length; i++) { s += attProjFactor(list[i], buySellMult); }
   return Math.round(s);
 }
 
@@ -37,14 +50,17 @@ function renderAttendees(attendees, cfg) {
   var speakers = all.filter(function(a) { return a.type === 'Speaker'; });
   var buyside = participants.filter(function(a) { return a.category === 'Buy-Side'; });
 
+  // Time-phased Buy/Sell-Side multiplier: 1.11 until the Friday before the event, then 1.035
+  var buySellMult = attBuySellMult(cfg);
+
   var html = '';
 
-  // Summary stats — projected to event start date (Buy/Sell-Side +3.5%, Delegates -2%)
+  // Summary stats — projected to event start date (Buy/Sell-Side inflated, Delegates -2%)
   html += '<div class="summary-grid">';
-  html += summaryBox('Total Attendees', attProjectedCount(all), cfg.keyColor);
-  html += summaryBox('Delegates', attProjectedCount(delegates), '#27AE60');
-  html += summaryBox('Participants', attProjectedCount(participants), '#2980B9');
-  html += summaryBox('Buy-Side', attProjectedCount(buyside), '#9B59B6');
+  html += summaryBox('Total Attendees', attProjectedCount(all, buySellMult), cfg.keyColor);
+  html += summaryBox('Delegates', attProjectedCount(delegates, buySellMult), '#27AE60');
+  html += summaryBox('Participants', attProjectedCount(participants, buySellMult), '#2980B9');
+  html += summaryBox('Buy-Side', attProjectedCount(buyside, buySellMult), '#9B59B6');
   html += summaryBox('Countries', new Set(all.map(function(a) { return a.country; }).filter(Boolean)).size, '#E67E22');
   var presentationCompanies = new Set(delegates.map(function(a) { return (a.company || '').toLowerCase().trim(); }).filter(Boolean));
   html += summaryBox('Presentations', presentationCompanies.size, '#7F8C8D');
@@ -63,7 +79,7 @@ function renderAttendees(attendees, cfg) {
 
   // Country bar
   var byCountry = {};
-  all.forEach(function(a) { if (a.country) byCountry[a.country] = (byCountry[a.country] || 0) + attProjFactor(a); });
+  all.forEach(function(a) { if (a.country) byCountry[a.country] = (byCountry[a.country] || 0) + attProjFactor(a, buySellMult); });
   var countrySorted = Object.entries(byCountry).sort(function(a, b) { return b[1] - a[1]; });
   var countryBarH = countrySorted.length * 28 + 40;
   html += '<div class="chart-card" style="margin-bottom:20px;padding-bottom:8px"><h3>Attendees by Country</h3>';
@@ -73,7 +89,7 @@ function renderAttendees(attendees, cfg) {
   var byRegion = {};
   all.forEach(function(a) {
     var r = getAttendeeRegion(a.country);
-    byRegion[r] = (byRegion[r] || 0) + attProjFactor(a);
+    byRegion[r] = (byRegion[r] || 0) + attProjFactor(a, buySellMult);
   });
   var regionSorted = Object.entries(byRegion).sort(function(a, b) { return b[1] - a[1]; });
   var regionBarH = regionSorted.length * 40 + 40;
