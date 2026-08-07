@@ -1275,13 +1275,15 @@
       var alreadyHas = history.some(function(r) { return r.year === currentYear; });
       if (!alreadyHas) {
         var total = composition.current.length;
-        var mineralCounts = { Gold: 0, Silver: 0, PGMs: 0, Other: 0 };
+        var isMFA = evt && evt.event_type === 'MFA';
+        var mineralCounts = { Gold: 0, Silver: 0, PGMs: 0, Copper: 0, Other: 0 };
         var statusCounts = { Producer: 0, Royalty: 0, Developer: 0, Explorer: 0 };
         composition.current.forEach(function(c) {
           var min = c.primary_mineral || '';
           if (min === 'Gold') mineralCounts.Gold++;
           else if (min === 'Silver') mineralCounts.Silver++;
           else if (min === 'PGMs' || min === 'Platinum' || min === 'Palladium') mineralCounts.PGMs++;
+          else if (isMFA && min === 'Copper') mineralCounts.Copper++;  // MFA tracks Copper distinctly; MFE folds it into Other
           else mineralCounts.Other++;
 
           var st = (c.company_status || '').toLowerCase();
@@ -1321,6 +1323,7 @@
             year: currentYear,
             pct_gold: mineralCounts.Gold / total,
             pct_silver: mineralCounts.Silver / total,
+            pct_copper: mineralCounts.Copper / total,
             pct_pgms: mineralCounts.PGMs / total,
             pct_other: mineralCounts.Other / total,
             pct_producer: statusCounts.Producer / total,
@@ -1347,14 +1350,16 @@
     html += '<div class="chart-row"><div class="chart-box chart-full">';
     html += '<canvas id="chart-hist-mineral"></canvas></div></div>';
 
-    // Collapsible table 1
+    // Collapsible table 1 (Copper column only when the series carries copper data)
+    var mineralHasCopper = history.some(function(r) { return Number(r.pct_copper) > 0; });
     html += '<details style="margin:8px 0 24px"><summary style="cursor:pointer;font-size:12px;color:#5D6D7E;user-select:none">Show data table</summary>';
-    html += '<table class="psr-table" style="margin-top:8px"><thead><tr><th>Year</th><th class="num">Gold</th><th class="num">Silver</th><th class="num">PGMs</th><th class="num">Other</th></tr></thead><tbody>';
+    html += '<table class="psr-table" style="margin-top:8px"><thead><tr><th>Year</th><th class="num">Gold</th><th class="num">Silver</th>' + (mineralHasCopper ? '<th class="num">Copper</th>' : '') + '<th class="num">PGMs</th><th class="num">Other</th></tr></thead><tbody>';
     history.forEach(function(r) {
       html += '<tr>';
       html += '<td>' + r.year + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_gold) + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_silver) + '</td>';
+      if (mineralHasCopper) html += '<td class="num">' + fmtPctVal(r.pct_copper) + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_pgms) + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_other) + '</td>';
       html += '</tr>';
@@ -3870,20 +3875,24 @@
 
       // Chart 1: Mineral composition — drop years with no mineral data
       var mineralRows = d.member_history.filter(function(r) {
-        return (r.pct_gold != null) || (r.pct_silver != null) || (r.pct_pgms != null) || (r.pct_other != null);
+        return (r.pct_gold != null) || (r.pct_silver != null) || (r.pct_copper != null) || (r.pct_pgms != null) || (r.pct_other != null);
       });
       var canvasM = document.getElementById('chart-hist-mineral');
       if (canvasM && mineralRows.length) {
+        // Copper is a distinct category only when the series carries copper data (MFA); MFE folds it into Other.
+        var hasCopper = mineralRows.some(function(r) { return Number(r.pct_copper) > 0; });
+        var mineralDS = [
+          { label: 'Gold', data: mineralRows.map(function(r) { return Number(r.pct_gold) || 0; }), backgroundColor: goldColor },
+          { label: 'Silver', data: mineralRows.map(function(r) { return Number(r.pct_silver) || 0; }), backgroundColor: silverColor }
+        ];
+        if (hasCopper) mineralDS.push({ label: 'Copper', data: mineralRows.map(function(r) { return Number(r.pct_copper) || 0; }), backgroundColor: '#CA6F1E' });
+        mineralDS.push({ label: 'PGMs', data: mineralRows.map(function(r) { return Number(r.pct_pgms) || 0; }), backgroundColor: pgmColor });
+        mineralDS.push({ label: 'Other', data: mineralRows.map(function(r) { return Number(r.pct_other) || 0; }), backgroundColor: otherColor });
         new Chart(canvasM.getContext('2d'), {
           type: 'bar',
           data: {
             labels: mineralRows.map(function(r) { return String(r.year); }),
-            datasets: [
-              { label: 'Gold', data: mineralRows.map(function(r) { return Number(r.pct_gold) || 0; }), backgroundColor: goldColor },
-              { label: 'Silver', data: mineralRows.map(function(r) { return Number(r.pct_silver) || 0; }), backgroundColor: silverColor },
-              { label: 'PGMs', data: mineralRows.map(function(r) { return Number(r.pct_pgms) || 0; }), backgroundColor: pgmColor },
-              { label: 'Other', data: mineralRows.map(function(r) { return Number(r.pct_other) || 0; }), backgroundColor: otherColor }
-            ]
+            datasets: mineralDS
           },
           options: stackedOpts
         });
