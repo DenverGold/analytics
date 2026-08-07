@@ -1277,7 +1277,7 @@
         var total = composition.current.length;
         var isMFA = evt && evt.event_type === 'MFA';
         var mineralCounts = { Gold: 0, Silver: 0, PGMs: 0, Copper: 0, Other: 0 };
-        var statusCounts = { Producer: 0, Royalty: 0, Developer: 0, Explorer: 0 };
+        var statusCounts = { Producer: 0, Royalty: 0, Developer: 0, Explorer: 0, Bullion: 0 };
         composition.current.forEach(function(c) {
           var min = c.primary_mineral || '';
           if (min === 'Gold') mineralCounts.Gold++;
@@ -1291,6 +1291,7 @@
           else if (st.indexOf('royalty') >= 0) statusCounts.Royalty++;
           else if (st.indexOf('developer') >= 0 || st.indexOf('dev') >= 0) statusCounts.Developer++;
           else if (st.indexOf('explorer') >= 0 || st.indexOf('exp') >= 0) statusCounts.Explorer++;
+          else if (isMFA && st.indexOf('bullion') >= 0) statusCounts.Bullion++;  // MFA tracks Bullion distinctly
         });
         if (total > 0) {
           // Compute gold & silver member market caps
@@ -1328,6 +1329,7 @@
             pct_other: mineralCounts.Other / total,
             pct_producer: statusCounts.Producer / total,
             pct_royalty: statusCounts.Royalty / total,
+            pct_bullion: statusCounts.Bullion / total,
             pct_developer: statusCounts.Developer / total,
             pct_explorer: statusCounts.Explorer / total,
             gold_oz_per_1m_mcap: goldOzPer1m,
@@ -1371,9 +1373,10 @@
     html += '<div class="chart-row"><div class="chart-box chart-full">';
     html += '<canvas id="chart-hist-status"></canvas></div></div>';
 
-    // Collapsible table 2
+    // Collapsible table 2 (Bullion column only when the series carries bullion data)
+    var statusHasBullion = history.some(function(r) { return Number(r.pct_bullion) > 0; });
     html += '<details style="margin:8px 0 0"><summary style="cursor:pointer;font-size:12px;color:#5D6D7E;user-select:none">Show data table</summary>';
-    html += '<table class="psr-table" style="margin-top:8px"><thead><tr><th>Year</th><th class="num">Producer</th><th class="num">Royalty</th><th class="num">Developer</th><th class="num">Explorer</th></tr></thead><tbody>';
+    html += '<table class="psr-table" style="margin-top:8px"><thead><tr><th>Year</th><th class="num">Producer</th><th class="num">Royalty</th><th class="num">Developer</th><th class="num">Explorer</th>' + (statusHasBullion ? '<th class="num">Bullion</th>' : '') + '</tr></thead><tbody>';
     history.forEach(function(r) {
       html += '<tr>';
       html += '<td>' + r.year + '</td>';
@@ -1381,6 +1384,7 @@
       html += '<td class="num">' + fmtPctVal(r.pct_royalty) + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_developer) + '</td>';
       html += '<td class="num">' + fmtPctVal(r.pct_explorer) + '</td>';
+      if (statusHasBullion) html += '<td class="num">' + fmtPctVal(r.pct_bullion) + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></details>';
@@ -3904,20 +3908,24 @@
       var devColor = '#E67E22';
       var expColor = '#9B59B6';
       var statusRows = d.member_history.filter(function(r) {
-        return (r.pct_producer != null) || (r.pct_royalty != null) || (r.pct_developer != null) || (r.pct_explorer != null);
+        return (r.pct_producer != null) || (r.pct_royalty != null) || (r.pct_developer != null) || (r.pct_explorer != null) || (r.pct_bullion != null);
       });
       var canvasS = document.getElementById('chart-hist-status');
       if (canvasS && statusRows.length) {
+        // Bullion is a distinct category only when the series carries bullion data (MFA); MFE omits it.
+        var hasBullion = statusRows.some(function(r) { return Number(r.pct_bullion) > 0; });
+        var statusDS = [
+          { label: 'Producer', data: statusRows.map(function(r) { return Number(r.pct_producer) || 0; }), backgroundColor: producerColor },
+          { label: 'Royalty', data: statusRows.map(function(r) { return Number(r.pct_royalty) || 0; }), backgroundColor: royaltyColor },
+          { label: 'Developer', data: statusRows.map(function(r) { return Number(r.pct_developer) || 0; }), backgroundColor: devColor },
+          { label: 'Explorer', data: statusRows.map(function(r) { return Number(r.pct_explorer) || 0; }), backgroundColor: expColor }
+        ];
+        if (hasBullion) statusDS.push({ label: 'Bullion', data: statusRows.map(function(r) { return Number(r.pct_bullion) || 0; }), backgroundColor: '#95A5A6' });
         new Chart(canvasS.getContext('2d'), {
           type: 'bar',
           data: {
             labels: statusRows.map(function(r) { return String(r.year); }),
-            datasets: [
-              { label: 'Producer', data: statusRows.map(function(r) { return Number(r.pct_producer) || 0; }), backgroundColor: producerColor },
-              { label: 'Royalty', data: statusRows.map(function(r) { return Number(r.pct_royalty) || 0; }), backgroundColor: royaltyColor },
-              { label: 'Developer', data: statusRows.map(function(r) { return Number(r.pct_developer) || 0; }), backgroundColor: devColor },
-              { label: 'Explorer', data: statusRows.map(function(r) { return Number(r.pct_explorer) || 0; }), backgroundColor: expColor }
-            ]
+            datasets: statusDS
           },
           options: stackedOpts
         });
