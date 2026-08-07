@@ -253,6 +253,9 @@
   // ── Main render ──────────────────────────────────────
   function renderReport(d) {
     var evt = d.event;
+    // Virtual-only years (striped bars) differ by series: MFA (Americas) was in-person from 2022 on —
+    // only 2020 was virtual-only (2021 was hybrid). MFE (Europe) ran virtual/hybrid 2020–2022.
+    VIRTUAL_YEARS = (evt && evt.event_type === 'MFA') ? { 2020: true } : { 2020: true, 2021: true, 2022: true };
     var html = '';
 
     // Report header
@@ -2007,7 +2010,8 @@
   }
 
   // ── Registration Historical Data ─────────────────────
-  var HIST_ATTENDANCE = [
+  // [year, Buy-Side, Sell-Side, Member Delegates, Media, Other]
+  var HIST_ATTENDANCE_MFE = [
     [2003, 63, 19, 44, 5, 9],
     [2004, 100, 19, 55, 4, 10],
     [2005, 99, 12, 57, 7, 1],
@@ -2031,6 +2035,36 @@
     [2023, 147, 7, 86, 7, 34],
     [2024, 172, 9, 87, 8, 32],
     [2025, 187, 12, 90, 7, 22]
+  ];
+  var HIST_ATTENDANCE_MFA = [
+    [1998, 77, 76, 175, 7, 41],
+    [1999, 62, 91, 173, 9, 25],
+    [2000, 40, 78, 162, 11, 25],
+    [2001, 48, 51, 133, 11, 34],
+    [2002, 68, 54, 175, 13, 26],
+    [2003, 90, 65, 202, 16, 27],
+    [2004, 99, 75, 206, 19, 26],
+    [2005, 97, 81, 247, 6, 28],
+    [2006, 149, 103, 274, 15, 51],
+    [2007, 199, 94, 333, 20, 48],
+    [2008, 176, 84, 408, 20, 36],
+    [2009, 206, 123, 462, 11, 47],
+    [2010, 334, 159, 491, 22, 56],
+    [2011, 313, 170, 510, 16, 63],
+    [2012, 302, 132, 571, 25, 77],
+    [2013, 331, 111, 533, 19, 41],
+    [2014, 315, 122, 530, 23, 47],
+    [2015, 299, 102, 473, 16, 52],
+    [2016, 333, 107, 487, 12, 85],
+    [2017, 268, 95, 539, 17, 117],
+    [2018, 293, 96, 574, 22, 100],
+    [2019, 333, 105, 549, 29, 117],
+    [2020, 516, 63, 605, 25, 69],
+    [2021, 401, 71, 703, 14, 99],
+    [2022, 221, 57, 464, 10, 117],
+    [2023, 238, 52, 473, 13, 126],
+    [2024, 228, 63, 453, 12, 130],
+    [2025, 282, 65, 479, 17, 152]
   ];
   var HIST_ATT_CATS = ['Buy-Side', 'Sell-Side', 'Member Delegates', 'Media', 'Other'];
   var HIST_ATT_COLORS = ['#2471A3', '#27AE60', '#D4AC0D', '#7F8C8D', '#C0392B'];
@@ -2071,7 +2105,8 @@
 
   // Build attendance history including current year from reg_recon data
   function buildAttendanceHistory() {
-    var rows = HIST_ATTENDANCE.slice();
+    var evtType = (reportData && reportData.event && reportData.event.event_type) || 'MFE';
+    var rows = (evtType === 'MFA' ? HIST_ATTENDANCE_MFA : HIST_ATTENDANCE_MFE).slice();
     if (reportData && reportData.reg_recon && reportData.event) {
       var yr = reportData.event.year;
       // Reg recon now uses attended-only data, so total = new + repeating + returning
