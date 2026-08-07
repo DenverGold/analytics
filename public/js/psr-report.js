@@ -1616,9 +1616,9 @@
   }
 
   // ── 9. Historical Financials ─────────────────────────
-  // Historical nominal direct operating revenue & expenses (MFE only)
-  // [year, revenue, expenses (negative)]
-  var HIST_FINANCIALS = [
+  // Historical nominal direct operating revenue & expenses, by event.
+  // [year, revenue, expenses (negative)]. Stored nominal; the Real toggle deflates via CPI-U.
+  var HIST_FINANCIALS_MFE = [
     [1997,  250000,  -188490],
     [1998,  220000,  -164484],
     [2000,  100000,  -159049],
@@ -1645,9 +1645,42 @@
     [2023,  571214,  -671894],
     [2024,  565431,  -553817]
   ];
+  // MFA: derived from the long-range P&L supplied in constant-2020 USD, back-converted to
+  // nominal via the CPI-U table above (base 2020) so the Real toggle reproduces the source at base 2020.
+  var HIST_FINANCIALS_MFA = [
+    [1997,   382901,   -157170],
+    [1998,   438342,   -186644],
+    [1999,   400979,   -160889],
+    [2000,   443528,   -249352],
+    [2001,   293604,   -157429],
+    [2002,   383120,   -238665],
+    [2003,   592874,   -281458],
+    [2004,   586350,   -387069],
+    [2005,   530485,   -293490],
+    [2006,   856347,   -469095],
+    [2007,  1070843,   -524039],
+    [2008,  1329822,   -657033],
+    [2009,  1375474,   -875769],
+    [2010,  1648942,   -967219],
+    [2011,  1843468,  -1354206],
+    [2012,  2077006,  -1129950],
+    [2013,  1818389,   -985259],
+    [2014,  1355072,  -1068464],
+    [2015,  1493141,  -1005195],
+    [2016,  1679352,  -1019425],
+    [2017,  1959911,  -1096652],
+    [2018,  2092122,  -1178928],
+    [2019,  2016425,  -1174803],
+    [2020,  1271333,   -295000],
+    [2021,  1575871,  -1391682],
+    [2022,  2065792,  -1385290],
+    [2023,  2173275,  -1460925],
+    [2024,  2349911,  -2029277],
+    [2025,  3232037,  -3403275]
+  ];
 
   function buildHistRows(financials, evt, histActuals) {
-    var rows = HIST_FINANCIALS.slice();
+    var rows = (evt && evt.event_type === 'MFA' ? HIST_FINANCIALS_MFA : HIST_FINANCIALS_MFE).slice();
 
     // Override with live actuals from budget Supabase
     if (histActuals && histActuals.length) {
