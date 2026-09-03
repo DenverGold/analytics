@@ -1,8 +1,8 @@
 // GET /api/metals — serve cached spot metal prices from Supabase
-// Prices are populated by the /api/metals-cron Vercel cron job.
-// Gold: updated every 60s, served with 2-minute CDN cache
-// Silver/others: updated every 5min, served with 5-minute CDN cache
-// GET /api/metals?refresh=true — force cron to run (admin auth required)
+// Prices are populated by the /api/metals-cron Vercel cron job, which runs
+// once per month (00:00 UTC on the 1st) and refreshes all five metals.
+// This endpoint never calls metals.dev itself — it only reads the cache.
+// GET /api/metals?refresh=true — force an out-of-cycle refresh (admin auth required)
 var crypto = require('crypto');
 var { createClient } = require('@supabase/supabase-js');
 
@@ -109,7 +109,8 @@ module.exports = async function handler(req, res) {
     var { data, error } = await sb.from('metal_prices').select('*').in('metal', METALS);
     if (error) throw error;
 
-    // CDN cache: 2 minutes (gold is updated every 60s by cron)
+    // CDN cache: 2 minutes. Prices only change on the monthly cron (or an admin refresh),
+    // so this short TTL just lets a forced refresh propagate quickly.
     res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=60');
 
     return res.status(200).json({

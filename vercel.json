@@ -7,7 +7,7 @@
     }
   },
   "crons": [
-    { "path": "/api/metals-cron", "schedule": "* * * * *" }
+    { "path": "/api/metals-cron", "schedule": "0 0 1 * *" }
   ],
   "redirects": [
     { "source": "/", "destination": "/dealbook", "has": [{ "type": "host", "value": "dealbook.miningforum.com" }], "permanent": false },

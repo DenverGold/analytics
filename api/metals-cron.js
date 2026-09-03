@@ -1,7 +1,10 @@
 // POST /api/metals-cron — Vercel Cron handler
 // Refreshes metal prices in the Supabase cache on a schedule.
-// Gold: every invocation (called every 60s by cron)
-// Silver, platinum, palladium, copper: every 5th invocation (~5 minutes)
+// Schedule (vercel.json): "0 0 1 * *" — once per month, 00:00 UTC on the 1st.
+// Gold is fetched every invocation; the other metals refresh whenever silver's
+// cached row is older than OTHER_INTERVAL_MS, which is always true on a monthly
+// cadence, so all five metals refresh together each run. An admin can force an
+// out-of-cycle refresh via GET /api/metals?refresh=true.
 var https = require('https');
 var { createClient } = require('@supabase/supabase-js');
 
@@ -83,7 +86,7 @@ module.exports = async function handler(req, res) {
     var updated = [];
     var errors = [];
 
-    // Always fetch gold (every 60s tick)
+    // Always fetch gold on every cron run
     for (var g = 0; g < GOLD_METALS.length; g++) {
       try {
         var row = await fetchSpot(apiKey, GOLD_METALS[g]);
